@@ -24,7 +24,7 @@
       (.read rdr buf)
       buf)))
 
-(defn wrap-proxy
+(defn proxy-url
   "Proxies requests from proxied-path, a local URI, to the remote URI at
   remote-base-uri, also a string."
   [handler ^String proxied-path remote-base-uri & [http-opts]]
@@ -32,11 +32,10 @@
    (fn [req]
      (if (.startsWith ^String (:uri req) proxied-path)
        (let [rmt-full   (URI. (str remote-base-uri "/"))
-             rmt-path   (URI. (.getScheme    rmt-full)
+             lcl-str (subs (:uri req) (inc (.length proxied-path)))
+             remote-uri   (URI. (.getScheme    rmt-full)
                               (.getAuthority rmt-full)
-                              (.getPath      rmt-full) nil nil)
-             lcl-path   (URI. (subs (:uri req) (.length proxied-path)))
-             remote-uri (.resolve rmt-path lcl-path) ]
+                              (str (.getPath rmt-full) lcl-str) nil nil)]
          (-> (merge {:method (:request-method req)
                      :url (str remote-uri "?" (:query-string req))
                      :headers (dissoc (:headers req) "host" "content-length")
